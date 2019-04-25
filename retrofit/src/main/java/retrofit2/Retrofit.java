@@ -21,8 +21,11 @@ public class Retrofit {
 
     private OkHttpClient mOkHttpClient;
 
-    public Retrofit(OkHttpClient mOkHttpClient) {
+    private Converter.Factory mConverterFactory;
+
+    public Retrofit(OkHttpClient mOkHttpClient, Converter.Factory mConverterFactory) {
         this.mOkHttpClient = mOkHttpClient;
+        this.mConverterFactory = mConverterFactory;
     }
 
     @SuppressWarnings("unchecked")
@@ -57,21 +60,23 @@ public class Retrofit {
         return mOkHttpClient.newCall(request);
     }
 
-    private Gson gson = new Gson();
-    private static final MediaType MEDIA_TYPE = MediaType.get("application/json; charset=UTF-8");
 
     private Call parsePost(String url, Method method, Object args[]) {
         final Type[] genericParameterTypes = method.getGenericParameterTypes();
         if (genericParameterTypes.length > 0) {
-            final Class<?> clazz = Utils.getRawType(genericParameterTypes[0]);
-            final String jsonBody = gson.toJson(args[0], clazz);
+            final RequestBody requestBody = requestBodyConverter(genericParameterTypes[0]).convert(args[0]);
             final Request request = new Request.Builder()
                     .url(url)
-                    .post(RequestBody.create(MEDIA_TYPE, jsonBody))
+                    .post(requestBody)
                     .build();
             return mOkHttpClient.newCall(request);
         }
         return null;
+    }
+
+
+    public <T> Converter<T, RequestBody> requestBodyConverter(Type type) {
+        return (Converter<T, RequestBody>) mConverterFactory.requestBodyConverter(type);
     }
 
 

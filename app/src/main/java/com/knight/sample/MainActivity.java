@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-    private Retrofit retrofit = new Retrofit(new OkHttpClient());
+    private Retrofit retrofit = new Retrofit(new OkHttpClient(),GsonConverterFactory.create());
     private void getToDayGankByRetrofit() {
         retrofit.createService(NetRestService.class).todayGank().enqueue(new Callback() {
             @Override
