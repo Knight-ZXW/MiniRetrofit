@@ -29,5 +29,6 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     annotationProcessor 'org.projectlombok:lombok:1.18.2'
 
+    implementation project(':retrofit')
     compileOnly 'org.projectlombok:lombok:1.18.2'
 }
