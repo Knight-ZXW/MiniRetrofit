@@ -1,14 +1,19 @@
 package retrofit2;
 
 
+import com.google.gson.Gson;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.Type;
 
 import okhttp3.Call;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
 
@@ -52,8 +57,20 @@ public class Retrofit {
         return mOkHttpClient.newCall(request);
     }
 
-    private Call parsePost(String url, Method method, Object args[]) {
+    private Gson gson = new Gson();
+    private static final MediaType MEDIA_TYPE = MediaType.get("application/json; charset=UTF-8");
 
+    private Call parsePost(String url, Method method, Object args[]) {
+        final Type[] genericParameterTypes = method.getGenericParameterTypes();
+        if (genericParameterTypes.length > 0) {
+            final Class<?> clazz = Utils.getRawType(genericParameterTypes[0]);
+            final String jsonBody = gson.toJson(args[0], clazz);
+            final Request request = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(MEDIA_TYPE, jsonBody))
+                    .build();
+            return mOkHttpClient.newCall(request);
+        }
         return null;
     }
 

@@ -8,6 +8,7 @@ import android.widget.TextView;
 
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
+import com.knight.sample.entity.AddToGank;
 import com.knight.sample.entity.TodayGankResponse;
 import com.knight.sample.entity.XianduResponse;
 
@@ -35,6 +36,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.btn_test_2)
                 .setOnClickListener(this);
         findViewById(R.id.btn_test_3)
+                .setOnClickListener(this);
+        findViewById(R.id.btn_test_4)
                 .setOnClickListener(this);
         resultTextView = findViewById(R.id.tv_result);
     }
@@ -73,14 +76,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn_test_3:
                 getToDayGankByRetrofit();
                 break;
+            case R.id.btn_test_4:
+                testPost();
+                break;
             default:
                 break;
         }
     }
 
 
+    private Retrofit retrofit = new Retrofit(new OkHttpClient());
     private void getToDayGankByRetrofit() {
-        final Retrofit retrofit = new Retrofit(new OkHttpClient());
         retrofit.createService(NetRestService.class).todayGank().enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -93,6 +99,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 TodayGankResponse todayGankResponse = gson.getAdapter(TodayGankResponse.class).read(jsonReader);
                 showHttpResult(todayGankResponse.toString());
                 Log.d("RetrofitTest","调用成功,结果为"+todayGankResponse.toString());
+            }
+        });
+    }
+
+    private void  testPost(){
+        final AddToGank addToGank = new AddToGank();
+        addToGank.setUrl("https://gank.io/api");
+        addToGank.setWho(null);
+        retrofit.createService(NetRestService.class)
+                .add2Gank(addToGank).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e("RetrofitTest","failed");
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                final String s = response.body().source().readUtf8();
+
+                Log.d("RetrofitTest","post调用成功,结果为"+s);
+
             }
         });
     }
