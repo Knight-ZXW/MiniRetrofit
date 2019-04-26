@@ -1,8 +1,11 @@
 package com.knight.sample;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonIOException;
 import com.google.gson.TypeAdapter;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
@@ -13,6 +16,7 @@ import java.nio.charset.Charset;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import okio.Buffer;
 import retrofit2.Converter;
 
@@ -41,7 +45,13 @@ public class GsonConverterFactory extends Converter.Factory {
     public Converter<?, RequestBody> requestBodyConverter(Type type) {
         TypeAdapter<?> adapter = gson.getAdapter(TypeToken.get(type));
         return new GsonRequestBodyConverter<>(gson, adapter);
+    }
 
+    @Override
+    public Converter<ResponseBody, ?> responseBodyConverter(Type type) {
+
+        TypeAdapter<?> adapter = gson.getAdapter(TypeToken.get(type));
+        return new GsonResponseBodyConverter<>(gson,adapter);
     }
 
 
@@ -72,6 +82,35 @@ public class GsonConverterFactory extends Converter.Factory {
                 return null;
             }
 
+        }
+
+    }
+
+
+    final class GsonResponseBodyConverter<T> implements Converter<ResponseBody, T> {
+        private final Gson gson;
+        private final TypeAdapter<T> adapter;
+
+        GsonResponseBodyConverter(Gson gson, TypeAdapter<T> adapter) {
+            this.gson = gson;
+            this.adapter = adapter;
+        }
+
+        @Override
+        public T convert(ResponseBody value) {
+            JsonReader jsonReader = gson.newJsonReader(value.charStream());
+            try {
+                T result = adapter.read(jsonReader);
+                if (jsonReader.peek() != JsonToken.END_DOCUMENT) {
+                    throw new JsonIOException("JSON document was not fully consumed.");
+                }
+                return result;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            } finally {
+                value.close();
+            }
         }
     }
 

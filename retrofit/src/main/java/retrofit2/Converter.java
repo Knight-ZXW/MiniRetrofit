@@ -5,6 +5,7 @@ import java.lang.reflect.Type;
 import javax.annotation.Nullable;
 
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 
 /**
  * Created by zhuoxiuwu
@@ -18,6 +19,10 @@ public interface Converter<F, T> {
     abstract class Factory {
         public @Nullable
         Converter<?, RequestBody> requestBodyConverter(Type type) {
+            return null;
+        }
+
+        public Converter<ResponseBody, ?> responseBodyConverter(Type type){
             return null;
         }
 

@@ -8,4 +8,7 @@ import lombok.ToString;
 public class BaseResponse<T> {
     private boolean error;
     private T results;
+    public BaseResponse(){
+
+    }
 }

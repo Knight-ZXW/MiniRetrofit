@@ -85,22 +85,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-    private Retrofit retrofit = new Retrofit(new OkHttpClient(),GsonConverterFactory.create());
+    private Retrofit retrofit = new Retrofit(new OkHttpClient(),GsonConverterFactory.create(),new NetCallAdapterFactory());
+
     private void getToDayGankByRetrofit() {
-        retrofit.createService(NetRestService.class).todayGank().enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
+        retrofit.createService(NetRestService.class).todayGank()
+                .execute(new NetCallback<TodayGankResponse>() {
+                    @Override
+                    public void onFailure(Exception e) {
 
-            }
+                    }
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                JsonReader jsonReader = gson.newJsonReader(response.body().charStream());
-                TodayGankResponse todayGankResponse = gson.getAdapter(TodayGankResponse.class).read(jsonReader);
-                showHttpResult(todayGankResponse.toString());
-                Log.d("RetrofitTest","调用成功,结果为"+todayGankResponse.toString());
-            }
-        });
+                    @Override
+                    public void onSuccess(TodayGankResponse data) {
+                        Log.d("RetrofitTest","调用成功,结果为"+data.toString());
+                        showHttpResult(data.toString());
+                    }
+                });
+
     }
 
     private void  testPost(){

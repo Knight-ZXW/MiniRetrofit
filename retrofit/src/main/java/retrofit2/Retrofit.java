@@ -14,6 +14,7 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
 
@@ -23,9 +24,12 @@ public class Retrofit {
 
     private Converter.Factory mConverterFactory;
 
-    public Retrofit(OkHttpClient mOkHttpClient, Converter.Factory mConverterFactory) {
+    private CallAdapter.Factory mCallAdapterFactory;
+
+    public Retrofit(OkHttpClient mOkHttpClient, Converter.Factory mConverterFactory, CallAdapter.Factory callAdapterFactory) {
         this.mOkHttpClient = mOkHttpClient;
         this.mConverterFactory = mConverterFactory;
+        this.mCallAdapterFactory = callAdapterFactory;
     }
 
     @SuppressWarnings("unchecked")
@@ -37,7 +41,7 @@ public class Retrofit {
                                          Object[] args) throws Throwable {
                         //获取方法所有的注解
                         final Annotation[] annotations = method.getAnnotations();
-
+                        final Type returnType = method.getGenericReturnType();
                         for (int i = 0; i < annotations.length; i++) {
                             if (annotations[i] instanceof GET) { //如果注解是GET类型
                                 final GET annotation = (GET) annotations[i];
@@ -53,15 +57,19 @@ public class Retrofit {
     }
 
 
-    private Call parseGet(String url, Method method, Object args[]) {
+    private Object parseGet(String url, Method method, Object args[]) {
         final Request request = new Request.Builder()
                 .url(url)
                 .get().build();
-        return mOkHttpClient.newCall(request);
+
+        final Call call = mOkHttpClient.newCall(request);
+
+
+        return adaptCall(method, call);
     }
 
 
-    private Call parsePost(String url, Method method, Object args[]) {
+    private Object parsePost(String url, Method method, Object args[]) {
         final Type[] genericParameterTypes = method.getGenericParameterTypes();
         if (genericParameterTypes.length > 0) {
             final RequestBody requestBody = requestBodyConverter(genericParameterTypes[0]).convert(args[0]);
@@ -69,14 +77,49 @@ public class Retrofit {
                     .url(url)
                     .post(requestBody)
                     .build();
-            return mOkHttpClient.newCall(request);
+            final Call call = mOkHttpClient.newCall(request);
+
+            return adaptCall(method, call);
+
         }
         return null;
     }
 
-
+    /**
+     * 负责 任意Java类型到 RequestBody的转换
+     * @param type
+     * @param <T>
+     * @return
+     */
     public <T> Converter<T, RequestBody> requestBodyConverter(Type type) {
         return (Converter<T, RequestBody>) mConverterFactory.requestBodyConverter(type);
+    }
+
+    /**
+     * 负责ResponseBody到Type类型的转换
+     * @param type
+     * @param <T>
+     * @return
+     */
+    public <T> Converter<ResponseBody,T> responseBodyTConverter(Type type){
+        return (Converter<ResponseBody, T>) mConverterFactory.responseBodyConverter(type);
+    }
+
+
+    /**
+     * 获取方法的返回类型，并使用CallAdapter做类型转换
+     * @param method
+     * @param call
+     * @return
+     */
+    private Object adaptCall(Method method, Call call) {
+        final Type returnType = method.getGenericReturnType();
+        if (Utils.getRawType(returnType) != Call.class) {
+            final CallAdapter<?> callAdapter = mCallAdapterFactory.get(returnType,this);
+            return callAdapter.adapt(call);
+        } else {
+            return call;
+        }
     }
 
 
